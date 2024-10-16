@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Sequencing Problem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background-color: #fff3e0;
+        }
+
+        .result {
+            background-color: #ffe0b2;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+
+        th {
+            background-color: #ffe0b2;
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-warning text-dark text-center py-5">
+        <h1 class="animate__animated animate__bounce">Job Sequencing Problem</h1>
+    </header>
+
+    <main class="container mt-5">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Input Jobs</h5>
+                <form id="jobSequencingForm">
+                    <input type="text" class="form-control" id="jobNames" placeholder="Enter job names (comma-separated)" required>
+                    <input type="text" class="form-control mt-3" id="deadlines" placeholder="Enter deadlines (comma-separated)" required>
+                    <input type="text" class="form-control mt-3" id="profits" placeholder="Enter profits (comma-separated)" required>
+                    <button type="submit" class="btn btn-warning mt-3">Calculate Job Sequencing</button>
+                </form>
+                <div class="result" id="jobSequencingResult" style="display:none;">
+                    <h5>Result:</h5>
+                    <pre id="jobSequencingOutput"></pre>
+                    <h5>Total Profit:</h5>
+                    <div id="totalProfit"></div>
+                    <h5>Scheduled Jobs:</h5>
+                    <table id="scheduledJobsTable">
+                        <thead>
+                            <tr>
+                                <th>Job Name</th>
+                                <th>Deadline</th>
+                                <th>Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduledJobsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-warning text-dark text-center py-4">
+        <p>&copy; 2024 LCBB Algorithm Visualizations | Powered by GitHub Pages</p>
+    </footer>
+
+    <script>
+        document.getElementById('jobSequencingForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const jobNamesInput = document.getElementById('jobNames').value.split(',');
+            const deadlinesInput = document.getElementById('deadlines').value.split(',').map(Number);
+            const profitsInput = document.getElementById('profits').value.split(',').map(Number);
+
+            if (jobNamesInput.length !== deadlinesInput.length || jobNamesInput.length !== profitsInput.length) {
+                alert('Please enter the same number of jobs, deadlines, and profits.');
+                return;
+            }
+
+            const result = jobSequencing(jobNamesInput, deadlinesInput, profitsInput);
+            const totalProfit = result.reduce((sum, job) => sum + job.profit, 0);
+
+            document.getElementById('jobSequencingOutput').textContent = 'Scheduled Jobs: ' + result.map(job => job.name).join(', ');
+            document.getElementById('totalProfit').textContent = totalProfit;
+
+            const scheduledJobsBody = document.getElementById('scheduledJobsBody');
+            scheduledJobsBody.innerHTML = ''; // Clear previous results
+            result.forEach(job => {
+                const row = `<tr>
+                    <td>${job.name}</td>
+                    <td>${job.deadline}</td>
+                    <td>${job.profit}</td>
+                </tr>`;
+                scheduledJobsBody.insertAdjacentHTML('beforeend', row);
+            });
+
+            document.getElementById('jobSequencingResult').style.display = 'block';
+        });
+
+        function jobSequencing(jobNames, deadlines, profits) {
+            const n = jobNames.length;
+            const jobs = [];
+            for (let i = 0; i < n; i++) {
+                jobs.push({ name: jobNames[i].trim(), deadline: deadlines[i], profit: profits[i] });
+            }
+
+            // Sort jobs by profit in decreasing order
+            jobs.sort((a, b) => b.profit - a.profit);
+
+            const result = [];
+            const slot = Array(n).fill(false);
+            const jobSchedule = Array(n).fill(null); // Track which job is assigned to which slot
+
+            // Iterate through all jobs
+            for (let i = 0; i < n; i++) {
+                // Find a slot for this job (starting from the last available slot)
+                for (let j = Math.min(n, jobs[i].deadline) - 1; j >= 0; j--) {
+                    if (!slot[j]) {
+                        slot[j] = true;
+                        jobSchedule[j] = jobs[i]; // Assign the job to the current slot
+                        result.push(jobs[i]);
+                        break;
+                    }
+                }
+            }
+
+            return result.filter(Boolean);
+        }
+    </script>
+</body>
+</html>

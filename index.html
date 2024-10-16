@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Least Cost Branch and Bound Algorithm</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="styles.css"> <!-- You can use your own stylesheet if needed -->
+    <style>
+        body {
+            background-color: #f0f8ff; /* Light background color */
+            color: #333; /* Dark text color */
+        }
+
+        .navbar {
+            background-color: #007bff; /* Bootstrap primary color */
+        }
+
+        .navbar-brand, .nav-link {
+            color: #ffffff !important; /* White text for navbar items */
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        h1 {
+            color: #ff4500; /* Orange color for main title */
+        }
+
+        .card {
+            transition: transform 0.2s; /* Animation for card hover */
+        }
+
+        .card:hover {
+            transform: scale(1.05); /* Scale effect on hover */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Shadow effect */
+        }
+
+        .result-section {
+            background-color: #ffffff; /* White background for results */
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .footer {
+            background-color: #007bff; /* Matching footer color */
+            color: #ffffff;
+            padding: 15px 0;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Custom styles for button */
+        .btn-primary {
+            background-color: #28a745; /* Green button */
+            border-color: #28a745;
+        }
+
+        .btn-primary:hover {
+            background-color: #218838; /* Darker green on hover */
+            border-color: #1e7e34;
+        }
+    </style>
+<style type="text/css" id="dcoder_stylesheet">body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+header nav a {
+    color: white;
+    margin: 0 15px;
+    text-decoration: none;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+.cta-btn {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.cta-btn:hover {
+    background-color: #0056b3;
+}
+
+#examples {
+    padding: 20px;
+}
+
+.example-btn {
+    padding: 10px 15px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.example-btn:hover {
+    background-color: #218838;
+}
+
+footer {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+#tree-container {
+    width: 100%;
+    height:</style></head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <a class="navbar-brand" href="#">LCBB Algorithm</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="knapsack.html">Knapsack Problem</a></li>
+                <li class="nav-item"><a class="nav-link" href="tsp.html">Traveling Salesman Problem</a></li>
+                <li class="nav-item"><a class="nav-link" href="job_sequencing.html">Job Sequencing</a></li>
+                <li class="nav-item"><a class="nav-link" href="job_assignment.html">Job Assignment</a></li>
+                <li class="nav-item"><a class="nav-link" href="code.html">View Code</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="animate__animated animate__bounce">Least Cost Branch and Bound (LCBB) Algorithm</h1>
+        <p>The LCBB algorithm is a heuristic search algorithm that explores the solution space by iteratively generating and evaluating candidate solutions.</p>
+        <div class="result-section">
+            <h2>Algorithm Overview</h2>
+            <ul>
+                <li><strong>Initialization:</strong> Create an initial solution and calculate its cost.</li>
+                <li><strong>Branching:</strong> Select a job that has not been processed yet and create branches for possible positions.</li>
+                <li><strong>Bounding:</strong> Calculate a lower bound on the cost of each branch.</li>
+                <li><strong>Selection:</strong> Choose the branch with the lowest lower bound and recursively apply the algorithm.</li>
+                <li><strong>Pruning:</strong> Prune branches that exceed the cost of the best solution found.</li>
+                <li><strong>Termination:</strong> Stop when a satisfactory solution is found.</li>
+            </ul>
+        </div>
+
+        <h2 class="mt-4">Examples of LCBB Algorithms</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card text-center mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Knapsack Problem</h5>
+                        <p class="card-text">Find the maximum value that can be carried in a knapsack.</p>
+                        <p><strong>Time Complexity:</strong> O(n * C)</p>
+                        <a href="knapsack.html" class="btn btn-primary">Explore</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Traveling Salesman Problem (TSP)</h5>
+                        <p class="card-text">Find the shortest route visiting each city exactly once.</p>
+                        <p><strong>Time Complexity:</strong> O(n!)</p>
+                        <a href="tsp.html" class="btn btn-primary">Explore</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Job Sequencing</h5>
+                        <p class="card-text">Schedule jobs to maximize profit while meeting deadlines.</p>
+                        <p><strong>Time Complexity:</strong> O(n log n)</p>
+                        <a href="job_sequencing.html" class="btn btn-primary">Explore</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Job Assignment</h5>
+                        <p class="card-text">Assign jobs to workers to minimize cost.</p>
+                        <p><strong>Time Complexity:</strong> O(n^2)</p>
+                        <a href="job_assignment.html" class="btn btn-primary">Explore</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer text-center">
+        <p>© 2024 LCBB Algorithm Visualizations | Powered by GitHub Pages</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script type="text/javascript" id="dcoder_script">document.getElementById('explore-btn').addEventListener('click', () => {
+    window.location.href = '#examples';
+});
+
+// Knapsack Example
+document.getElementById('knapsack-btn').addEventListener('click', () => {
+    const output = document.getElementById('knapsack-output');
+    output.innerHTML = 'Knapsack algorithm running...<br>Max Profit: 220 (Demo Result)';
+});
+
+// TSP Example
+document.getElementById('tsp-btn').addEventListener('click', () => {
+    const output = document.getElementById('tsp-output');
+    output.innerHTML = 'TSP algorithm running...<br>Shortest Path: 25 (Demo Result)';
+});
+
+// Job Sequencing Example
+document.getElementById('job-sequencing-btn').addEventListener('click', () => {
+    const output = document.getElementById('job-sequencing-output');
+    output.innerHTML = 'Job Sequencing algorithm running...<br>Max Profit: 180 (Demo Result)';
+});
+
+// LCBB Tree Visualization using D3.js
+document.addEventListener("DOMContentLoaded", function () {
+    // Data representing the tree (static demo)
+    const treeData = {
+        name: "Start",
+        children: [
+            {
+                name: "Node 1",
+                children: [
+                    { name: "Node 1.1" },
+                    { name: "Node 1.2" }
+                ]
+            },
+            {
+                name: "Node 2",
+                children: [
+                    { name: "Node 2.1" },
+                    { name: "Node 2.2" }
+                ]
+            }
+        ]
+    };
+
+    // Set up the dimensions and margins of the diagram
+    const margin = { top: 20, right: 90, bottom: 30, left: 90 },
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    // Append the svg object to the tree-container div
+    const svg = d3.select("#tree-container")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Create a hierarchical structure from the data
+    const root = d3.hierarchy(treeData);
+
+    // Create a tree layout and assign the size
+    const treeLayout = d3.tree().size([height, width]);
+
+    // Generate the tree
+    treeLayout(root);
+
+    // Links (branches)
+    svg.selectAll(".link")
+        .data(root.descendants().slice(1))
+        .enter()
+        .append("path")
+        .attr("class", "link")
+        .attr("d", function (d) {
+            return (
+                "M" +
+                d.y +
+                "," +
+                d.x +
+                "C" +
+                (d.y + d.parent.y) / 2 +
+                "," +
+                d.x +
+                " " +
+                (d.y + d.parent.y) / 2 +
+                "," +
+                d.parent.x +
+                " " +
+                d.parent.y +
+                "," +
+                d.parent.x
+            );
+        });
+
+    // Nodes (states)
+    const node = svg.selectAll(".node")
+        .data(root.descendants())
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+
+    // Circle for each node
+    node.append("circle")
+        .attr("r", 10)
+        .style("fill", "#69b3a2");
+
+    // Label for each node
+    node.append("text")
+        .attr("dy", ".35em")
+        .attr("x", function (d) {
+            return d.children ? -13 : 13;
+        })
+        .style("text-anchor", function (d) {
+            return d.children ? "end" : "start";
+        })
+        .text(function (d) {
+            return d.data.name;
+        });
+});</script></body></html>

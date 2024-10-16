@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"> 
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Job Assignment Problem</title> 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"> 
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"> 
+  <link rel="stylesheet" href="styles.css"> 
+  <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .result {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .explanation {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+    </style> 
+ </head> 
+ <body> 
+  <header class="bg-primary text-white text-center py-5"> 
+   <h1 class="animate__animated animate__bounce">Job Assignment Problem</h1> 
+  </header> 
+  <main class="container mt-5"> 
+   <div class="card"> 
+    <div class="card-body"> 
+     <h5 class="card-title">Input Cost Matrix</h5> 
+     <form id="assignmentForm"> <textarea class="form-control" id="costMatrix" rows="5" placeholder="Enter the cost matrix as a 2D array (e.g., [[9,2,7,8],[6,4,3,7],[5,8,1,8],[7,6,9,4]])"></textarea> <button type="submit" class="btn btn-primary mt-3">Calculate Assignment</button> 
+     </form> 
+     <div class="result" id="resultContainer" style="display:none;"> 
+      <h5>Optimal Assignments:</h5> 
+      <pre id="output"></pre> 
+     </div> 
+     <div class="explanation" id="explanationContainer" style="display:none;"> 
+      <p><strong>Backtracking Explanation:</strong> Backtracking is an algorithmic technique for solving problems incrementally, where the algorithm builds candidates for solutions and abandons a candidate as soon as it is determined that the candidate cannot lead to a valid solution. In this context, it means considering assignments for workers and jobs and retracting decisions if they do not lead to an optimal solution.</p> 
+     </div> 
+     <div class="result" id="backtrackingContainer" style="display:none;"> 
+      <h5>Backtracking Progress:</h5> 
+      <pre id="backtrackingOutput"></pre> 
+     </div> 
+    </div> 
+   </div> 
+  </main> 
+  <footer class="bg-primary text-white text-center py-4"> 
+   <p>© 2024 LCBB Algorithm Visualizations | Powered by GitHub Pages</p> 
+  </footer> 
+  <script>
+        document.getElementById('assignmentForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const input = document.getElementById('costMatrix').value;
+            try {
+                const costMatrix = JSON.parse(input);
+                const { output, totalCost, backtrackingOutput } = findMinCost(costMatrix);
+                document.getElementById('output').textContent = output + `\nTotal Optimal Cost: ${totalCost}`;
+                document.getElementById('backtrackingOutput').textContent = backtrackingOutput;
+                document.getElementById('resultContainer').style.display = 'block';
+                document.getElementById('explanationContainer').style.display = 'block';
+                document.getElementById('backtrackingContainer').style.display = 'block';
+            } catch (error) {
+                alert('Invalid input format! Please enter a valid cost matrix.');
+            }
+        });
+
+        function findMinCost(costMatrix) {
+            const N = costMatrix.length; // Number of workers/jobs
+            let output = '';
+            let backtrackingOutput = ''; // To store backtracking information
+
+            function Node(workerID, jobID, parent) {
+                this.parent = parent;
+                this.pathCost = 0;
+                this.cost = 0;
+                this.workerID = workerID;
+                this.jobID = jobID;
+                this.assigned = Array(N).fill(false);
+                if (jobID !== -1) {
+                    this.assigned[jobID] = true;
+                }
+            }
+
+            const calculateCost = (x, y, assigned) => {
+                let cost = 0;
+                const available = Array(N).fill(true);
+                for (let i = x + 1; i < N; i++) {
+                    let min = Infinity, minIndex = -1;
+                    for (let j = 0; j < N; j++) {
+                        if (!assigned[j] && available[j] && costMatrix[i][j] < min) {
+                            minIndex = j;
+                            min = costMatrix[i][j];
+                        }
+                    }
+                    cost += min;
+                    available[minIndex] = false;
+                }
+                return cost;
+            };
+
+            const printAssignments = (min) => {
+                if (min.parent === null) return;
+                printAssignments(min.parent);
+                output += `Assign Worker ${String.fromCharCode(min.workerID + 65)} to Job ${min.jobID} (Cost: ${costMatrix[min.workerID][min.jobID]})\n`;
+                backtrackingOutput += `Backtracking: Assign Worker ${String.fromCharCode(min.workerID + 65)} to Job ${min.jobID} (Cost: ${costMatrix[min.workerID][min.jobID]})\n`;
+            };
+
+            const pq = [];
+            const root = new Node(-1, -1, null);
+            root.pathCost = root.cost = 0;
+            pq.push(root);
+
+            while (pq.length > 0) {
+                const min = pq.shift();
+                const i = min.workerID + 1;
+
+                if (i === N) {
+                    printAssignments(min);
+                    const totalCost = min.cost;
+                    return { output, totalCost, backtrackingOutput };
+                }
+
+                for (let j = 0; j < N; j++) {
+                    if (!min.assigned[j]) {
+                        const child = new Node(i, j, min);
+                        child.pathCost = min.pathCost + costMatrix[i][j];
+                        child.cost = child.pathCost + calculateCost(i, j, child.assigned);
+                        pq.push(child);
+                    }
+                }
+            }
+            return { output: "No assignment found.", totalCost: 0, backtrackingOutput: "" };
+        }
+    </script> 
+ 
+</body></html>

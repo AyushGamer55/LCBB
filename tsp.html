@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en"> 
+ <head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>TSP Visualization using LCBB</title> 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"> 
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet"> 
+  <style>
+        body {
+            background-color: #e8f5e9;
+        }
+
+        canvas {
+            border: 2px solid #4CAF50;
+            background-color: #f9f9f9;
+            margin: 20px;
+        }
+
+        .result {
+            background-color: #c8e6c9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        header {
+            background-color: #388e3c;
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        footer {
+            background-color: #388e3c;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+        }
+    </style> 
+ </head> 
+ <body> 
+  <header class="animate__animated animate__bounce"> 
+   <h1>Traveling Salesman Problem Visualization</h1> 
+  </header> 
+  <main class="container mt-5"> 
+   <div class="card"> 
+    <div class="card-body"> 
+     <h5 class="card-title">Input Distance Matrix</h5> <textarea class="form-control" id="matrixInput" rows="5" placeholder="Enter distance matrix (space-separated rows, one row per line)" required></textarea> <button id="runButton" class="btn btn-success mt-3">Run TSP</button> 
+     <canvas id="graphCanvas" width="600" height="600" class="mt-4"></canvas> 
+     <div class="result" id="output" style="display:none;"></div> 
+    </div> 
+   </div> 
+  </main> 
+  <footer> 
+   <p>© 2024 LCBB Algorithm Visualizations | Powered by GitHub Pages</p> 
+  </footer> 
+  <script>
+        const canvas = document.getElementById("graphCanvas");
+        const ctx = canvas.getContext("2d");
+        const runButton = document.getElementById("runButton");
+        const matrixInput = document.getElementById("matrixInput");
+        const output = document.getElementById("output");
+
+        let N = 0; // Number of cities
+        let final_path = [];
+        let visited = [];
+        let final_res = Number.MAX_SAFE_INTEGER;
+
+        function copyToFinal(curr_path) {
+            for (let i = 0; i < N; i++) {
+                final_path[i] = curr_path[i];
+            }
+            final_path[N] = curr_path[0];
+        }
+
+        function firstMin(adj, i) {
+            let min = Number.MAX_SAFE_INTEGER;
+            for (let k = 0; k < N; k++) {
+                if (adj[i][k] < min && i !== k) {
+                    min = adj[i][k];
+                }
+            }
+            return min;
+        }
+
+        function secondMin(adj, i) {
+            let first = Number.MAX_SAFE_INTEGER;
+            let second = Number.MAX_SAFE_INTEGER;
+            for (let j = 0; j < N; j++) {
+                if (i == j) continue;
+                if (adj[i][j] <= first) {
+                    second = first;
+                    first = adj[i][j];
+                } else if (adj[i][j] <= second && adj[i][j] !== first) {
+                    second = adj[i][j];
+                }
+            }
+            return second;
+        }
+
+        function TSPRec(adj, curr_bound, curr_weight, level, curr_path) {
+            if (level == N) {
+                if (adj[curr_path[level - 1]][curr_path[0]] !== 0) {
+                    let curr_res = curr_weight + adj[curr_path[level - 1]][curr_path[0]];
+                    if (curr_res < final_res) {
+                        copyToFinal(curr_path);
+                        final_res = curr_res;
+                    }
+                }
+                return;
+            }
+
+            for (let i = 0; i < N; i++) {
+                if (adj[curr_path[level - 1]][i] !== 0 && !visited[i]) {
+                    let temp = curr_bound;
+                    curr_weight += adj[curr_path[level - 1]][i];
+
+                    if (level == 1) {
+                        curr_bound -= (firstMin(adj, curr_path[level - 1]) + firstMin(adj, i)) / 2;
+                    } else {
+                        curr_bound -= (secondMin(adj, curr_path[level - 1]) + firstMin(adj, i)) / 2;
+                    }
+
+                    if (curr_bound + curr_weight < final_res) {
+                        curr_path[level] = i;
+                        visited[i] = true;
+                        TSPRec(adj, curr_bound, curr_weight, level + 1, curr_path);
+                    }
+
+                    curr_weight -= adj[curr_path[level - 1]][i];
+                    curr_bound = temp;
+
+                    visited.fill(false);
+                    for (let j = 0; j <= level - 1; j++) {
+                        visited[curr_path[j]] = true;
+                    }
+                }
+            }
+        }
+
+        function TSP(adj) {
+            final_path = Array(N + 1).fill(-1);
+            let curr_path = Array(N + 1).fill(-1);
+            let curr_bound = 0;
+            visited.fill(false);
+
+            for (let i = 0; i < N; i++) {
+                curr_bound += (firstMin(adj, i) + secondMin(adj, i));
+            }
+
+            curr_bound = (curr_bound % 2 === 0) ? (curr_bound / 2) : (curr_bound / 2) + 1;
+
+            visited[0] = true;
+            curr_path[0] = 0;
+
+            TSPRec(adj, curr_bound, 0, 1, curr_path);
+        }
+
+        function drawGraph(adj) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const nodeRadius = 20;
+            const angleStep = (2 * Math.PI) / N;
+
+            const positions = [];
+
+            for (let i = 0; i < N; i++) {
+                const x = 300 + 200 * Math.cos(i * angleStep);
+                const y = 300 + 200 * Math.sin(i * angleStep);
+                positions.push({ x, y });
+                ctx.beginPath();
+                ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff6347'; // Sphere color
+                ctx.fill();
+                ctx.stroke();
+                ctx.font = '16px Arial';
+                ctx.fillText(`City ${i}`, x - nodeRadius / 2, y - nodeRadius / 2);
+            }
+
+            let animationStep = 0;
+
+            function animate() {
+                if (animationStep < final_path.length - 1) {
+                    const from = positions[final_path[animationStep]];
+                    const to = positions[final_path[animationStep + 1]];
+
+                    ctx.beginPath();
+                    ctx.moveTo(from.x, from.y);
+                    ctx.lineTo(to.x, to.y);
+                    ctx.strokeStyle = '#4682b4'; // Line color
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ff6347'; // Sphere color
+                    ctx.beginPath();
+                    ctx.arc(from.x, from.y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fill();
+
+                    animationStep++;
+                    setTimeout(animate, 1000);
+                }
+            }
+
+            animate();
+        }
+
+        runButton.addEventListener("click", () => {
+            const input = matrixInput.value.trim().split('\n');
+            N = input.length;
+            const adj = input.map(line => line.split(' ').map(Number));
+
+            // Input validation
+            for (let i = 0; i < N; i++) {
+                if (adj[i].length !== N || adj[i].some(d => d < 0)) {
+                    alert("Please enter a valid distance matrix.");
+                    return;
+                }
+            }
+
+            final_res = Number.MAX_SAFE_INTEGER;
+            final_path = [];
+            visited = Array(N).fill(false);
+
+            TSP(adj);
+            drawGraph(adj);
+
+            output.innerHTML = `Minimum cost: ${final_res}<br>Path Taken: ${final_path.join(" -> ")}`;
+            output.style.display = 'block';
+        });
+    </script> 
+ </body>
+</html>

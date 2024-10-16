@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knapsack Problem (Branch and Bound Tree Visualization)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        body {
+            background-color: #e3f2fd;
+        }
+        header {
+            background-color: #1E88E5;
+        }
+        svg {
+            border: 2px solid #4CAF50;
+            background: #fff;
+            margin-top: 20px;
+        }
+        .result {
+            background-color: #c8e6c9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .optimal {
+            stroke: green;
+            stroke-width: 3;
+        }
+        .pruned {
+            stroke: red;
+            stroke-width: 2;
+        }
+        .neutral {
+            stroke: orange;
+            stroke-width: 1.5;
+        }
+        footer {
+            background-color: #1E88E5;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header class="text-white text-center py-5">
+        <h1 class="animate__animated animate__bounce">Knapsack Problem (Branch and Bound)</h1>
+    </header>
+
+    <main class="container mt-5">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Input Weights, Values, and Capacity</h5>
+                <textarea class="form-control" id="itemsInput" rows="3" placeholder="Enter items as [[value, weight],...]"></textarea>
+                <input type="number" id="capacityInput" class="form-control mt-3" placeholder="Enter knapsack capacity">
+                <button id="runButton" class="btn btn-primary mt-3">Calculate Knapsack</button>
+                <div id="knapsackResult" class="result" style="display:none;">
+                    <h5>Result:</h5>
+                    <pre id="knapsackOutput"></pre>
+                </div>
+            </div>
+        </div>
+
+        <svg width="800" height="600"></svg>
+    </main>
+
+    <footer class="text-white text-center py-4">
+        <p>© 2024 LCBB Algorithm Visualizations | Powered by GitHub Pages</p>
+    </footer>
+
+    <script>
+        class Item {
+            constructor(value, weight, index) {
+                this.value = value;
+                this.weight = weight;
+                this.index = index;
+            }
+        }
+
+        class Node {
+            constructor(level = 0, profit = 0, weight = 0, bound = 0, path = [], parent = null) {
+                this.level = level;
+                this.profit = profit;
+                this.weight = weight;
+                this.bound = bound;
+                this.path = path;
+                this.parent = parent;
+                this.children = [];
+            }
+        }
+
+        function calculateBound(node, items, capacity) {
+            if (node.weight >= capacity) return 0;
+            let bound = node.profit, totalWeight = node.weight;
+
+            for (let i = node.level; i < items.length; i++) {
+                if (totalWeight + items[i].weight <= capacity) {
+                    totalWeight += items[i].weight;
+                    bound += items[i].value;
+                } else {
+                    bound += ((capacity - totalWeight) / items[i].weight) * items[i].value;
+                    break;
+                }
+            }
+            return bound;
+        }
+
+        function branchAndBoundKnapsack(items, capacity) {
+            items.sort((a, b) => (b.value / b.weight) - (a.value / a.weight));
+
+            let maxProfit = 0, pq = [];
+            let root = new Node(0, 0, 0, calculateBound(new Node(), items, capacity), []);
+            pq.push(root);
+            let bestNode = root;
+
+            while (pq.length) {
+                let curr = pq.shift();
+
+                if (curr.level === items.length || curr.weight > capacity) continue;
+
+                let nextLevel = curr.level + 1;
+                let nextPathWithItem = [...curr.path, true];
+                let nextPathWithoutItem = [...curr.path, false];
+
+                let withItem = new Node(
+                    nextLevel,
+                    curr.profit + items[curr.level].value,
+                    curr.weight + items[curr.level].weight,
+                    0,
+                    nextPathWithItem,
+                    curr
+                );
+                curr.children.push(withItem);
+
+                if (withItem.weight <= capacity && withItem.profit > maxProfit) {
+                    maxProfit = withItem.profit;
+                    bestNode = withItem;
+                }
+                withItem.bound = calculateBound(withItem, items, capacity);
+                if (withItem.bound > maxProfit) pq.push(withItem);
+
+                let withoutItem = new Node(nextLevel, curr.profit, curr.weight, 0, nextPathWithoutItem, curr);
+                curr.children.push(withoutItem);
+
+                withoutItem.bound = calculateBound(withoutItem, items, capacity);
+                if (withoutItem.bound > maxProfit) pq.push(withoutItem);
+            }
+
+            return { maxProfit, bestNode, root };
+        }
+
+        function getSelectedItems(bestNode, items) {
+            let selectedItems = [];
+            let currentNode = bestNode;
+
+            while (currentNode && currentNode.parent) {
+                if (currentNode.path[currentNode.level - 1]) {
+                    selectedItems.push(items[currentNode.level - 1].index);
+                }
+                currentNode = currentNode.parent;
+            }
+
+            return selectedItems.reverse();
+        }
+
+        function buildTreeData(node) {
+            return {
+                name: `Profit: ${node.profit}, Bound: ${node.bound}`,
+                children: node.children.map(child => buildTreeData(child)),
+                node: node
+            };
+        }
+
+        function drawTree(rootNode, bestNode) {
+            const svg = d3.select("svg");
+            svg.selectAll("*").remove();
+
+            const treeLayout = d3.tree().size([600, 400]);
+            const root = d3.hierarchy(buildTreeData(rootNode));
+
+            treeLayout(root);
+
+            const nodes = svg.append("g")
+                .selectAll("g")
+                .data(root.descendants())
+                .enter()
+                .append("g")
+                .attr("transform", d => `translate(${d.x + 100},${d.y + 50})`);
+
+            nodes.append("circle")
+                .attr("r", 15)
+                .attr("fill", d => {
+                    if (d.data.node === bestNode) return "green";
+                    if (d.data.node.bound < bestNode.profit) return "red";
+                    return "orange";
+                });
+
+            nodes.append("text")
+                .attr("dy", 3)
+                .attr("dx", -20)
+                .text(d => d.data.name);
+
+            const links = svg.append("g")
+                .selectAll("line")
+                .data(root.links())
+                .enter()
+                .append("line")
+                .attr("x1", d => d.source.x + 100)
+                .attr("y1", d => d.source.y + 50)
+                .attr("x2", d => d.target.x + 100)
+                .attr("y2", d => d.target.y + 50)
+                .attr("class", d => {
+                    if (d.target.data.node === bestNode) return "optimal";
+                    if (d.target.data.node.bound < bestNode.profit) return "pruned";
+                    return "neutral";
+                });
+        }
+
+        document.getElementById("runButton").addEventListener("click", () => {
+            try {
+                const itemsInput = JSON.parse(document.getElementById("itemsInput").value);
+                const items = itemsInput.map((item, index) => new Item(item[0], item[1], index + 1));
+                const capacity = parseInt(document.getElementById("capacityInput").value);
+
+                const { maxProfit, bestNode, root } = branchAndBoundKnapsack(items, capacity);
+
+                const selectedItems = getSelectedItems(bestNode, items);
+
+                document.getElementById("knapsackOutput").textContent = `Maximum Profit: ${maxProfit}\nItems Selected: ${selectedItems.map(i => `Item ${i}`).join(", ")}`;
+                document.getElementById("knapsackResult").style.display = "block";
+
+                drawTree(root, bestNode);
+            } catch (error) {
+                alert("Invalid input! Please ensure the items and capacity are in the correct format.");
+            }
+        });
+    </script>
+
+</body></html>
